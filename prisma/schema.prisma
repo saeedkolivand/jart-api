@@ -1,21 +1,212 @@
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-
-model User {
-id String @id @default(cuid())
-email String @unique
-passwordHash String?
-name String?
-createdAt DateTime @default(now())
+generator client {
+  provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum AppStatus {
+  APPLIED
+  HR
+  INTERVIEW
+  TECH
+  OFFER
+  REJECTED
+  WITHDRAWN
+  HIRED
+}
+
+enum AttachmentKind {
+  RESUME
+  COVER_LETTER
+  OFFER
+  OTHER
+}
+
+model User {
+  id              String      @id @default(cuid())
+  email           String      @unique
+  name            String?
+  passwordHash    String?
+  keycloakId      String?     @unique
+  orgMemberships  OrgMember[]
+  notes           Note[]
+  createdTasks    Task[]      @relation("CreatedTasks")
+  assignedTasks   Task[]      @relation("AssignedTasks")
+  createdApplications Application[] @relation("CreatedApplications")
+  auditLogs       AuditLog[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model Organization {
+  id            String      @id @default(cuid())
+  name          String
+  members       OrgMember[]
+  applications  Application[]
+  webhooks      WebhookSubscription[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrgMember {
+  id        String   @id @default(cuid())
+  orgId     String
+  userId    String
+  role      Role
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([orgId, userId])
+}
 
 model Application {
-id String @id @default(cuid())
-title String
-company String
-source String?
-status String @default("APPLIED")
-createdAt DateTime @default(now())
+  id          String      @id @default(cuid())
+  orgId       String
+  title       String
+  company     String
+  location    String?
+  source      String?     // LinkedIn, Referral, etc.
+  status      AppStatus   @default(APPLIED)
+  salaryMin   Int?
+  salaryMax   Int?
+  jobPostingUrl String?
+  description String?
+  createdById String
+  stages      Stage[]
+  notes       Note[]
+  contacts    ApplicationContact[]
+  attachments Attachment[]
+  referrals   Referral[]
+  tasks       Task[]
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdBy   User         @relation("CreatedApplications", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Stage {
+  id          String      @id @default(cuid())
+  appId       String
+  name        String
+  scheduledAt DateTime?
+  result      String?
+  application Application @relation(fields: [appId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Note {
+  id        String     @id @default(cuid())
+  appId     String
+  authorId  String
+  body      String
+  application Application @relation(fields: [appId], references: [id], onDelete: Cascade)
+  author    User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+}
+
+model Contact {
+  id            String               @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  company       String?
+  title         String?
+  links         Json?
+  applications  ApplicationContact[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+}
+
+model ApplicationContact {
+  id          String      @id @default(cuid())
+  appId       String
+  contactId   String
+  application Application @relation(fields: [appId], references: [id], onDelete: Cascade)
+  contact     Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([appId, contactId])
+}
+
+model Referral {
+  id            String       @id @default(cuid())
+  appId         String
+  referrerEmail String
+  status        String       @default("REQUESTED")
+  rewardCents   Int?
+  application   Application  @relation(fields: [appId], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Attachment {
+  id           String         @id @default(cuid())
+  appId        String
+  key          String
+  mime         String
+  size         Int
+  kind         AttachmentKind @default(OTHER)
+  name         String
+  application  Application    @relation(fields: [appId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String?
+  oldValue    Json?
+  newValue    Json?
+  ipAddress   String?
+  userAgent   String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+}
+
+model Task {
+  id            String       @id @default(cuid())
+  title         String
+  description   String?
+  dueDate       DateTime
+  completed     Boolean      @default(false)
+  applicationId String?
+  assignedToId  String?
+  createdById   String
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  assignedTo    User?        @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy     User         @relation("CreatedTasks", fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model WebhookSubscription {
+  id          String   @id @default(cuid())
+  orgId       String
+  url         String
+  events      String[]
+  secret      String
+  isActive    Boolean  @default(true)
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

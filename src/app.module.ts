@@ -1,25 +1,36 @@
-import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
-import { HealthController } from "./health/health.controller";
-import { AuthModule } from "./auth/auth.module";
-import { UsersModule } from "./users/users.module";
-import { ApplicationsModule } from "./applications/applications.module";
-import { ContactsModule } from "./contacts/contacts.module";
-import { NotesModule } from "./notes/notes.module";
-import { TasksModule } from "./tasks/tasks.module";
-import { QueueModule } from "./queue/queue.module";
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { SharedModule } from '@shared/shared.module';
+import { AuthModule } from '@modules/auth/auth.module';
+import { UsersModule } from '@modules/users/users.module';
+import { ApplicationsModule } from '@modules/applications/applications.module';
+import { OrganizationsModule } from '@modules/organizations/organizations.module';
+import { LoggerMiddleware } from '@app/common/middleware/logger.middleware';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // 1 minute in milliseconds
+      limit: 100,
+    }]),
+    SharedModule,
     AuthModule,
     UsersModule,
     ApplicationsModule,
-    ContactsModule,
-    NotesModule,
-    TasksModule,
-    QueueModule,
+    OrganizationsModule,
   ],
-  controllers: [HealthController],
+  controllers: [AppController],
+  providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes('*');
+  }
+}
