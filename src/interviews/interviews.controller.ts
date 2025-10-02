@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete } from "@nestjs/common";
-import { InterviewsService } from "@/interviews/interviews.service.js";
-import { CreateInterviewDto } from "@/interviews/dto/create-interview.dto.js";
-import { UpdateInterviewDto } from "@/interviews/dto/update-interview.dto.js";
+import { InterviewsService } from "@/interviews/interviews.service";
+import { CreateInterviewDto } from "@/interviews/dto/create-interview.dto";
+import { UpdateInterviewDto } from "@/interviews/dto/update-interview.dto";
 
 @Controller("interviews")
 export class InterviewsController {
