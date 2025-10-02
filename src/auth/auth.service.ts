@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from '@/prisma/prisma.service';
-import { JwtService } from '@nestjs/jwt';
-import { AuthEntity } from './entity/auth.entity';
-import { SignupResponseDto } from './dto/signup.dto';
-import bcrypt from 'bcryptjs';
+import { Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { PrismaService } from "@/prisma/prisma.service";
+import { JwtService } from "@nestjs/jwt";
+import { AuthEntity } from "./entity/auth.entity";
+import { SignupResponseDto } from "./dto/signup.dto";
+import bcrypt from "bcryptjs";
 
 @Injectable()
 export class AuthService {
@@ -31,7 +31,7 @@ export class AuthService {
 
     // If the password does not match, throw an error
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException("Invalid credentials");
     }
 
     // Step 3: Generate a JWT containing the user's ID and return it
@@ -51,7 +51,7 @@ export class AuthService {
     const existingUser = await this.prisma.user.findFirst({ where: { email: normalizedEmail } });
 
     if (existingUser) {
-      throw new Error('User already exists');
+      throw new Error("User already exists");
     }
 
     const hash = await this.encryptPassword(password, 10);

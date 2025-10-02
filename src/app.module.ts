@@ -1,18 +1,22 @@
-import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
-import { ThrottlerModule, ThrottlerGuard, seconds } from '@nestjs/throttler';
+import { Module } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
+import { ThrottlerModule, ThrottlerGuard, seconds } from "@nestjs/throttler";
 
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { PrismaModule } from './prisma/prisma.module';
-import { ApplicationsModule } from './applications/applications.module';
-import { UsersModule } from './users/users.module';
-import { InterviewsModule } from './interviews/interviews.module';
-import { AuthModule } from './auth/auth.module';
-import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { AppController } from "./app.controller";
+import { AppService } from "./app.service";
+import { PrismaModule } from "./prisma/prisma.module";
+import { ApplicationsModule } from "./applications/applications.module";
+import { UsersModule } from "./users/users.module";
+import { InterviewsModule } from "./interviews/interviews.module";
+import { AuthModule } from "./auth/auth.module";
+import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
+import { ConfigModule } from "@nestjs/config";
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     ThrottlerModule.forRoot([{ ttl: seconds(60), limit: 5 }]),
     AuthModule,
     PrismaModule,

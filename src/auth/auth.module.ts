@@ -1,25 +1,30 @@
-import { Module } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { PassportModule } from '@nestjs/passport';
-import { JwtModule } from '@nestjs/jwt';
-import { PrismaModule } from '@/prisma/prisma.module';
-import { PrismaService } from '@/prisma/prisma.service';
-import { JwtStrategy } from './strategies/jwt.strategy';
-import Config from '@/config/configuration';
-
-const appConfig = Config();
+import { Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { JwtModule } from "@nestjs/jwt";
+import { PassportModule } from "@nestjs/passport";
+import { PrismaModule } from "@/prisma/prisma.module"; // Import PrismaModule
+import { AuthService } from "./auth.service";
+import { JwtStrategy } from "./strategies/jwt.strategy";
+import { AuthController } from "./auth.controller"; // If you have a controller
 
 @Module({
   imports: [
     PrismaModule,
-    PassportModule,
-    JwtModule.register({
-      secret: appConfig.jwt.secret,
-      signOptions: { expiresIn: appConfig.jwt.expiresIn }, // e.g. 30s, 7d, 24h
+    ConfigModule,
+    PassportModule.register({ defaultStrategy: "jwt" }),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get<string>("JWT_SECRET", "your-fallback-secret"),
+        signOptions: {
+          expiresIn: configService.get<string>("JWT_EXPIRES_IN", "1d"),
+        },
+      }),
+      inject: [ConfigService],
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, PrismaService],
+  providers: [AuthService, JwtStrategy],
+  exports: [AuthService, JwtModule, PassportModule],
 })
 export class AuthModule {}

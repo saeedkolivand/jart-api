@@ -1,14 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { CreateInterviewDto } from './dto/create-interview.dto';
-import { UpdateInterviewDto } from './dto/update-interview.dto';
-import { PrismaService } from '../prisma/prisma.service';
+import { Injectable } from "@nestjs/common";
+import { CreateInterviewDto } from "@/interviews/dto/create-interview.dto.js";
+import { PrismaService } from "@/prisma/prisma.service.js";
+import { UpdateInterviewDto } from "@/interviews/dto/update-interview.dto.js";
 
 @Injectable()
 export class InterviewsService {
   constructor(private prisma: PrismaService) {}
 
   create(createInterviewDto: CreateInterviewDto) {
-    return 'This action adds a new interview';
+    return "This action adds a new interview";
   }
 
   findAll() {
